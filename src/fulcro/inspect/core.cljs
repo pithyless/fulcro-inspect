@@ -2,6 +2,7 @@
   (:require
     [cljs.reader :refer [read-string]]
     [goog.functions :as gfun]
+    [goog.dom :as gdom]
     [goog.object :as gobj]
     [fulcro.client :as fulcro]
     [fulcro.client.mutations :as mutations :refer-macros [defmutation]]
@@ -16,6 +17,7 @@
     [fulcro.inspect.ui.element :as element]
     [fulcro.inspect.ui.network :as network]
     [fulcro.inspect.ui.transactions :as transactions]
+    [fulcro.inspect.ui.portal :as portal]
     [fulcro-css.css :as css]
     [fulcro.client.dom :as dom]
     [fulcro.client.primitives :as fp]))
@@ -55,6 +57,35 @@
 (let [factory (fp/factory IFrame)]
   (defn ui-iframe [props child]
     (factory (assoc props :child child))))
+
+(defn js-window [] js/window)
+(defn js-document [] js/document)
+(defn js-body [] js/document.body)
+
+(fp/defsc WindowPortal [this _]
+  {:initLocalState
+   (fn []
+     (gobj/set this "containerElement" (gdom/createElement "div")))
+
+   :componentDidMount
+   (fn []
+     (let [window    (.open (js-window) "" "fulcro-inspect" "width=600,height=400,left=200,top=200,toolbar=no,titlebar=no")
+           doc       (gobj/get window "document")
+           container (gobj/get this "containerElement")]
+       (gobj/set this "externalWindow" window)
+       (gobj/set doc "title" "Fulcro Inspect")
+       (gdom/appendChild (gobj/get doc "body") container)))
+
+   :componentWillUnmount
+   (fn []
+     (.close (gobj/get this "externalWindow")))}
+
+  (apply portal/portal {:append-to #(gobj/get this "containerElement")}
+    (fp/children this)))
+
+(let [factory (fp/factory WindowPortal)]
+  (defn ui-window-portal [props & children]
+    (apply factory props children)))
 
 (fp/defui ^:once GlobalInspector
   static fp/InitialAppState
@@ -107,12 +138,8 @@
 
   Object
   (componentDidMount [this]
-    (gobj/set this "frame-dom" (js/ReactDOM.findDOMNode (gobj/get this "frame-node")))
     (gobj/set this "resize-debouncer"
       (gfun/debounce #(db.h/persistent-set! this :ui/size ::dock-size %) 300)))
-
-  (componentDidUpdate [this _ _]
-    (gobj/set this "frame-dom" (js/ReactDOM.findDOMNode (gobj/get this "frame-node"))))
 
   (render [this]
     (let [{:ui/keys [size visible? inspector historical-dom-view dock-side]} (fp/props this)
@@ -168,22 +195,28 @@
                                          (js/document.addEventListener "mouseup"
                                            (fn [e]
                                              (gobj/set (.-style frame) "pointerEvents" "initial")
-                                             (js/document.removeEventListener "mousemove" handler)))))}))
+                                             (js/document.removeEventListener "mousemove" handler)))))})
+
+          (dom/noscript nil))
 
         (case dock-side
           ::dock-right
           (dom/div #js {:className (str (:container css) " " (:container-right css))
                         :style     #js {:width (str (- 100 size) "%")}
                         :ref       #(gobj/set this "container" %)}
-            (ui-iframe {:className (:frame css) :ref #(gobj/set this "frame-node" %)}
+            (ui-iframe {:className (:frame css)}
               (multi-inspector/multi-inspector inspector)))
 
           ::dock-bottom
           (dom/div #js {:className (str (:container css) " " (:container-bottom css))
                         :style     #js {:height (str (- 100 size) "%")}
                         :ref       #(gobj/set this "container" %)}
-            (ui-iframe {:className (:frame css) :ref #(gobj/set this "frame-node" %)}
-              (multi-inspector/multi-inspector inspector))))))))
+            (ui-iframe {:className (:frame css)}
+              (multi-inspector/multi-inspector inspector)))
+
+          ::dock-window
+          (ui-window-portal {}
+            (multi-inspector/multi-inspector inspector)))))))
 
 (def global-inspector-view (fp/factory GlobalInspector))
 

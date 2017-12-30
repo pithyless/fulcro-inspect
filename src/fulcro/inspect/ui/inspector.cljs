@@ -130,6 +130,10 @@
           (dom/div #js {:className (:dock-side css)}
             (dom/div #js {:className (:dock-title css)} "Dock side")
             (ui/icon {:className (:dock-icon css)
+                      :title     "Open on new window"
+                      :onClick   #(set-dock! :fulcro.inspect.core/dock-window)}
+              :dock-right)
+            (ui/icon {:className (:dock-icon css)
                       :title     "Dock to bottom"
                       :onClick   #(set-dock! :fulcro.inspect.core/dock-bottom)}
               (if (= dock-side :fulcro.inspect.core/dock-bottom) :dock-bottom-blue :dock-bottom))
