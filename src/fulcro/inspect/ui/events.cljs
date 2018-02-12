@@ -97,10 +97,18 @@
 
 (fp/defui ^:once KeyListener
   Object
-  (componentDidMount [this] (start-handler this))
-  (componentWillUnmount [this] (dispose-handler this))
-  (componentWillUpdate [this _ _] (dispose-handler this))
-  (componentDidUpdate [this _ _] (start-handler this))
+  (componentDidMount [this]
+    (js/console.log "KeyListener MOUNT")
+    (start-handler this))
+  (componentWillUnmount [this]
+    (js/console.log "KeyListener UN-MOUNT")
+    (dispose-handler this))
+  (componentWillUpdate [this _ _]
+    (js/console.log "KeyListener WILL-UPDATE")
+    (dispose-handler this))
+  (componentDidUpdate [this _ _]
+    (js/console.log "KeyListener DID-UPDATE")
+    (start-handler this))
 
   (render [_]
     (dom/noscript nil)))

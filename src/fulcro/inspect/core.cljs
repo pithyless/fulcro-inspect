@@ -39,13 +39,16 @@
 
 (fp/defui IFrame
   Object
-  (componentDidMount [this] (start-frame this))
+  (componentDidMount [this]
+    (js/console.log "iFrame MOUNT")
+    (start-frame this))
 
   (componentDidUpdate [this _ _]
     (let [child (:child (fp/props this))]
       (update-frame-content this child)))
 
   (componentWillUnmount [this]
+    (js/console.log "iFrame UN-MOUNT")
     (let [frame-component (gobj/get this "frame-component")]
       (js/ReactDOM.unmountComponentAtNode frame-component)))
 
@@ -130,6 +133,7 @@
                               ::events/keystroke keystroke})
         (domv/ui-dom-history-view (fp/computed historical-dom-view {:target-app app}))
 
+        (js/console.log "VISIBLE: " visible?)
         (if visible?
           (case dock-side
             ::dock-right

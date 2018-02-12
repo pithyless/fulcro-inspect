@@ -278,6 +278,12 @@
     (let [{::keys [content expanded elide-one? static?] :as props} (fp/props this)
           {::keys [path-action]} (fp/get-computed props)
           css (css/get-classnames DataViewer)]
+      (js/console.log "DataViewer/render")
+      (when (js->clj (js/ReactDOM.findDOMNode this))
+        (js/console.log "rendering data viewer" (js/ReactDOM.findDOMNode this))
+        (js/console.log "rendering data viewer" (.-id (js/ReactDOM.findDOMNode this)))
+        (js/console.log "rendering data viewer" (.-value (js/ReactDOM.findDOMNode this))))
+
       (dom/div #js {:className (:container css)}
         (render-data {:expanded    expanded
                       :static?     static?
